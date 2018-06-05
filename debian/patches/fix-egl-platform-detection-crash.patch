@@ -1,0 +1,38 @@
+commit 45d92a4b6d989c4f1aa2cc4fe75556bb6f62ec4d
+Author: Christopher James Halse Rogers <christopher.halse.rogers@canonical.com>
+Date:   Mon Mar 5 10:15:02 2018 +0100
+
+    Handle dlsym succeeding with info.dli_sname == NULL.
+    
+    When dlsym is handed an address in a shared object that doesn't match a symbol
+    in that shared object (such as a C++ vtable) it returns success but sets
+    dli_sname to null.
+    
+    Handle this case rather than crashing.
+
+diff --git a/src/EGL/libegl.c b/src/EGL/libegl.c
+index db595f6..08fa26c 100644
+--- a/src/EGL/libegl.c
++++ b/src/EGL/libegl.c
+@@ -165,6 +165,10 @@ static EGLBoolean IsGbmDisplay(void *native_display)
+         return EGL_FALSE;
+     }
+ 
++    if (!info.dli_sname) {
++        return EGL_FALSE;
++    }
++
+     return !strcmp(info.dli_sname, "gbm_create_device");
+ }
+ 
+@@ -197,6 +201,10 @@ static EGLBoolean IsWaylandDisplay(void *native_display)
+         return EGL_FALSE;
+     }
+ 
++    if (!info.dli_sname) {
++        return EGL_FALSE;
++    }
++
+     return !strcmp(info.dli_sname, "wl_display_interface");
+ }
+ 

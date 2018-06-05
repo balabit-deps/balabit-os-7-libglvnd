@@ -1,0 +1,2 @@
+fix-egl-platform-detection-crash.patch
+kfreebsd-hurd.patch
