@@ -1,0 +1,76 @@
+From 28e05b934903ac9ea104ddda3ef79e6103ca8456 Mon Sep 17 00:00:00 2001
+From: Kyle Brenneman <kbrenneman@nvidia.com>
+Date: Thu, 22 Feb 2018 11:33:43 -0700
+Subject: [PATCH] Always return an error from eglMakeCurrent if the EGLDispaly
+ is invalid
+
+In eglMakeCurrent, check to make sure the EGLDisplay is valid, even if the
+context is NULL.
+
+Fixes https://github.com/NVIDIA/libglvnd/issues/151
+---
+ src/EGL/libegl.c           | 16 +++++++++-------
+ tests/testeglmakecurrent.c |  4 ++--
+ 2 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/src/EGL/libegl.c b/src/EGL/libegl.c
+index 6586ada..db595f6 100644
+--- a/src/EGL/libegl.c
++++ b/src/EGL/libegl.c
+@@ -642,6 +642,15 @@ PUBLIC EGLBoolean EGLAPIENTRY eglMakeCurrent(EGLDisplay dpy,
+ 
+     __eglEntrypointCommon();
+ 
++    // According to the EGL spec, the display handle must be valid, even if
++    // the context is NULL.
++    newDpy = __eglLookupDisplay(dpy);
++    if (newDpy == NULL) {
++        __eglReportError(EGL_BAD_DISPLAY, "eglMakeCurrent", NULL,
++                "Invalid display %p", dpy);
++        return EGL_FALSE;
++    }
++
+     if (context == EGL_NO_CONTEXT && (draw != EGL_NO_SURFACE || read != EGL_NO_SURFACE)) {
+         __eglReportError(EGL_BAD_MATCH, "eglMakeCurrent", NULL,
+                 "Got an EGLSurface but no EGLContext");
+@@ -691,15 +700,8 @@ PUBLIC EGLBoolean EGLAPIENTRY eglMakeCurrent(EGLDisplay dpy,
+     }
+ 
+     if (context != EGL_NO_CONTEXT) {
+-        newDpy = __eglLookupDisplay(dpy);
+-        if (newDpy == NULL) {
+-            __eglReportError(EGL_BAD_DISPLAY, "eglMakeCurrent", NULL,
+-                    "Invalid display %p", dpy);
+-            return EGL_FALSE;
+-        }
+         newVendor = newDpy->vendor;
+     } else {
+-        newDpy = NULL;
+         newVendor = NULL;
+     }
+ 
+diff --git a/tests/testeglmakecurrent.c b/tests/testeglmakecurrent.c
+index ec9937e..17169bc 100644
+--- a/tests/testeglmakecurrent.c
++++ b/tests/testeglmakecurrent.c
+@@ -188,7 +188,7 @@ void checkIsCurrent(const TestContextInfo *ci)
+ 
+ void testSwitchContext(const TestContextInfo *oldCi, const TestContextInfo *newCi)
+ {
+-    EGLDisplay newDpy = (newCi != NULL ? newCi->dpy : EGL_NO_DISPLAY);
++    EGLDisplay newDpy = (newCi != NULL ? newCi->dpy : oldCi->dpy);
+     EGLContext newCtx = (newCi != NULL ? newCi->ctx : EGL_NO_CONTEXT);
+ 
+     if (!eglMakeCurrent(newDpy, EGL_NO_SURFACE, EGL_NO_SURFACE, newCtx)) {
+@@ -212,7 +212,7 @@ void testSwitchContext(const TestContextInfo *oldCi, const TestContextInfo *newC
+ void testSwitchContextFail(const TestContextInfo *oldCi,
+         const TestContextInfo *newCi, const TestContextInfo *failCi)
+ {
+-    EGLDisplay newDpy = (newCi != NULL ? newCi->dpy : EGL_NO_DISPLAY);
++    EGLDisplay newDpy = (newCi != NULL ? newCi->dpy : oldCi->dpy);
+     EGLContext newCtx = (newCi != NULL ? newCi->ctx : EGL_NO_CONTEXT);
+     EGLint error;
+ 
+-- 
+2.17.1
+

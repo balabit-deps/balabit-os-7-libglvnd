@@ -1,3 +1,11 @@
+libglvnd (1.0.0-2ubuntu2.2) bionic; urgency=medium
+
+  * rules, libgles2: Add GLESv1 support. (LP: #1782285)
+  * Always return an error from eglMakeCurrent if EGLDisplay is invalid.
+    (LP: #1780039)
+
+ -- Timo Aaltonen <tjaalton@debian.org>  Wed, 15 Aug 2018 09:20:42 +0300
+
 libglvnd (1.0.0-2ubuntu2.1) bionic; urgency=medium
 
   * control: Drop the alternate depends on lib{egl,glx}-vendor, the

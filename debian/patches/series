@@ -1,2 +1,3 @@
 fix-egl-platform-detection-crash.patch
 kfreebsd-hurd.patch
+Always-return-an-error-from-eglMakeCurrent-if-the-EG.patch
