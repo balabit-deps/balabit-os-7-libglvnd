@@ -1,0 +1,29 @@
+commit 9948df636708e2915e5c2daa61b318e6252bc02e
+Author: Sai Kiran Korwar <skirank.nvidia.com>
+Date:   Wed Feb 13 10:52:01 2019 +0530
+
+    AARCH64 : Fix address passed to clear cache
+    
+    The entrypointExec address is modified before being passed to
+    clear_cache function. We do a small add/subtract for ARMv7 in
+    order to enable Thumb mode. This is not required for Aarch64 as
+    it does not support Thumb mode. Since we were not adding anything,
+    do not subtract as well before passing the address to clear_cache.
+    
+    This was causing a crash while calling glXGetProcAddress.
+
+diff --git a/src/util/glvnd_genentry.c b/src/util/glvnd_genentry.c
+index 1404fd2..0b51eaf 100644
+--- a/src/util/glvnd_genentry.c
++++ b/src/util/glvnd_genentry.c
+@@ -314,8 +314,8 @@ void SetDispatchFuncPointer(GLVNDGenEntrypoint *entry,
+     *((uintptr_t *)(code + DISPATCH_FUNC_OFFSET)) = (uintptr_t)dispatch;
+ 
+     // See http://community.arm.com/groups/processors/blog/2010/02/17/caches-and-self-modifying-code
+-    __builtin___clear_cache((char *)entry->entrypointExec - 1,
+-                            (char *)entry->entrypointExec - 1 + sizeof(STUB_TEMPLATE));
++    __builtin___clear_cache((char *)entry->entrypointExec,
++                            (char *)entry->entrypointExec + sizeof(STUB_TEMPLATE));
+ 
+ #elif defined(USE_PPC64LE_ASM)
+ 
